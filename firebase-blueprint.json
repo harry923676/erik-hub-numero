@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with saved personal numerology inputs",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Auth UID of the user" },
+        "displayName": { "type": "string", "description": "Display name of the user" },
+        "email": { "type": "string", "description": "Email address" },
+        "photoURL": { "type": "string", "description": "Avatar photo URL" },
+        "savedName": { "type": "string", "description": "Default full birth name for numerology calculation" },
+        "savedDob": { "type": "string", "description": "Default date of birth (YYYY-MM-DD)" },
+        "savedSystem": { "type": "string", "description": "Preferred default calculation system (chaldean, pythagorean, or all)" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last update" }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "SavedReading": {
+      "title": "SavedReading",
+      "description": "A saved calculation reading or profile snapshot created by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier of the reading" },
+        "userId": { "type": "string", "description": "UID of the owner user" },
+        "title": { "type": "string", "description": "Title or person/business name for this reading" },
+        "type": { "type": "string", "description": "Type of reading: personal, business, compatibility, name_lab, or custom" },
+        "system": { "type": "string", "description": "System used: chaldean, pythagorean, or katapayadi" },
+        "inputData": { "type": "object", "description": "Raw input payload (name, dob, partner info, etc.)" },
+        "summary": { "type": "string", "description": "Key numerical summary (e.g. Root 1, Destiny 5, Compound 37)" },
+        "notes": { "type": "string", "description": "Optional notes or remarks" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of creation" }
+      },
+      "required": ["id", "userId", "title", "type", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user personal preference and profile details"
+    },
+    "/users/{userId}/readings/{readingId}": {
+      "schema": "SavedReading",
+      "description": "User's saved numerology calculation readings and reports"
+    }
+  }
+}

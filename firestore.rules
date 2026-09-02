@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt'])
+        && data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128
+        && data.email is string && data.email.size() > 0 && data.email.size() <= 256
+        && data.updatedAt is string && data.updatedAt.size() <= 64
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && (!('savedName' in data) || (data.savedName is string && data.savedName.size() <= 100))
+        && (!('savedDob' in data) || (data.savedDob is string && data.savedDob.size() <= 32))
+        && (!('savedSystem' in data) || (data.savedSystem is string && data.savedSystem.size() <= 32));
+    }
+
+    function isValidSavedReading(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'type', 'createdAt'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 128
+        && data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 150
+        && data.type is string && data.type.size() > 0 && data.type.size() <= 50
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && (!('system' in data) || (data.system is string && data.system.size() <= 50))
+        && (!('summary' in data) || (data.summary is string && data.summary.size() <= 500))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000))
+        && (!('inputData' in data) || (data.inputData is map));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users cannot enumerate all profiles
+
+      allow create: if isOwner(userId)
+        && incoming().uid == request.auth.uid
+        && isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId)
+        && incoming().uid == request.auth.uid
+        && isValidUserProfile(incoming());
+
+      allow delete: if isOwner(userId);
+
+      match /readings/{readingId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && incoming().userId == request.auth.uid
+          && isValidSavedReading(incoming());
+
+        allow update: if isOwner(userId)
+          && incoming().userId == request.auth.uid
+          && isValidSavedReading(incoming());
+
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}
